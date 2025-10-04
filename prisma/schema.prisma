@@ -1,0 +1,215 @@
+// E-commerce MVP Database Schema
+// Based on PRD requirements for products, categories, tags, orders, reviews, and admin
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin users for backend management
+model Admin {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastLogin    DateTime? @map("last_login")
+
+  // Refresh tokens issued to this admin
+  refreshTokens RefreshToken[]
+
+  @@map("admins")
+  @@index([email])
+}
+
+// Product categories for organization
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(100)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Many-to-many with products
+  products ProductCategory[]
+
+  @@map("categories")
+}
+
+// Product tags for flexible labeling
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.VarChar(50)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Many-to-many with products
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+// Core product entity
+model Product {
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(255)
+  description   String? @db.Text
+  price         Decimal @db.Decimal(10, 2)
+  sku           String  @unique @db.VarChar(100)
+  stockQuantity Int     @default(0) @map("stock_quantity")
+  imageUrl      String? @map("image_url") @db.VarChar(500)
+  isActive      Boolean @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // SEO fields
+  metaTitle     String? @map("meta_title") @db.VarChar(60)
+  metaDescription String? @map("meta_description") @db.VarChar(160)
+  slug          String? @unique @db.VarChar(100)
+
+  // Relationships
+  categories ProductCategory[]
+  tags       ProductTag[]
+  reviews    Review[]
+  orderItems OrderItem[]
+
+  @@map("products")
+  @@index([sku])
+  @@index([isActive])
+  @@index([slug])
+}
+
+// Junction table for product-category many-to-many
+model ProductCategory {
+  productId  Int @map("product_id")
+  categoryId Int @map("category_id")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@map("product_categories")
+}
+
+// Junction table for product-tag many-to-many
+model ProductTag {
+  productId Int @map("product_id")
+  tagId     Int @map("tag_id")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+// Customer orders
+model Order {
+  id              Int         @id @default(autoincrement())
+  orderNumber     String      @unique @map("order_number") @db.VarChar(50)
+  status          OrderStatus @default(PENDING)
+  shippingAddress String      @map("shipping_address") @db.Text
+  shippingMethod  String      @map("shipping_method") @db.VarChar(100)
+  shippingCost    Decimal?    @map("shipping_cost") @db.Decimal(10, 2)
+  subtotal        Decimal?    @db.Decimal(10, 2)
+  total           Decimal?    @db.Decimal(10, 2)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relationships
+  items OrderItem[]
+
+  @@map("orders")
+  @@index([orderNumber])
+  @@index([createdAt])
+}
+
+// Individual items within orders
+model OrderItem {
+  id           Int     @id @default(autoincrement())
+  orderId      Int     @map("order_id")
+  productId    Int     @map("product_id")
+  productName  String  @map("product_name") @db.VarChar(255)
+  productPrice Decimal @map("product_price") @db.Decimal(10, 2)
+  quantity     Int
+  subtotal     Decimal @db.Decimal(10, 2)
+
+  // Relationships
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// Product reviews and ratings
+model Review {
+  id           Int      @id @default(autoincrement())
+  productId    Int      @map("product_id")
+  rating       Int      // 1-5 stars
+  reviewText   String?  @map("review_text") @db.Text
+  reviewerName String?  @map("reviewer_name") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+// Order status enum
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+
+  @@map("order_status")
+}
+
+// Customers (shop users)
+model Customer {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastLogin    DateTime? @map("last_login")
+
+  // Refresh tokens issued to this customer
+  refreshTokens RefreshToken[]
+
+  @@map("customers")
+  @@index([email])
+}
+
+// Refresh tokens for rotating refresh token strategy
+model RefreshToken {
+  id           Int       @id @default(autoincrement())
+  // Either admin or customer will be set (one of them)
+  adminId      Int?
+  customerId   Int?
+  familyId     String    @db.VarChar(64) // groups rotated tokens
+  tokenHash    String    @map("token_hash") @db.VarChar(255)
+  userAgent    String?   @map("user_agent") @db.VarChar(255)
+  ip           String?   @db.VarChar(64)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+  replacedById Int?
+
+  // Relations
+  admin     Admin?    @relation(fields: [adminId], references: [id])
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  replacedBy RefreshToken? @relation("RefreshTokenReplacement", fields: [replacedById], references: [id])
+  replaced   RefreshToken[] @relation("RefreshTokenReplacement")
+
+  @@index([familyId])
+  @@index([adminId])
+  @@index([customerId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
