@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Environment variables schema with validation
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('8000').transform(val => parseInt(val, 10)),
+  PORT: z.string().default('8080').transform(val => parseInt(val, 10)), // Default to 8080 for Fly.io
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_HOURS: z.string().default('8').transform(val => parseInt(val, 10)),
@@ -15,6 +15,9 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   CLOUDINARY_FOLDER: z.string().default('ecommerce/products'),
+  // Fly.io specific
+  FLY_MACHINE_ID: z.string().optional(),
+  FLY_REGION: z.string().optional(),
 });
 
 // Parse and validate environment variables
