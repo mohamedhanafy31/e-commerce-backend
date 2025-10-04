@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Environment variables schema with validation
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('8080').transform(val => parseInt(val, 10)), // Default to 8080 for Fly.io
+  PORT: z.string().default('3000').transform(val => parseInt(val, 10)), // Default to 3000 for Railway
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_HOURS: z.string().default('8').transform(val => parseInt(val, 10)),

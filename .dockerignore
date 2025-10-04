@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build outputs
+dist
+build
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+coverage
+
+# Temporary files
+tmp
+temp
+
+# Git
+.git
+.gitignore
+README.md
+*_DEPLOYMENT.md
+
+# Documentation
+docs
+*.md
+!fly.toml
+
+# Test files
+tests
+test
+*.test.ts
+*.spec.ts
+
+# Deployment scripts
+deploy.sh
+*.bat
+*.sh

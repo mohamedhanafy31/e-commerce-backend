@@ -1,0 +1,58 @@
+# Fly.io configuration for E-commerce Backend
+app = "ecommerce-backend"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile.fly"
+
+[deploy]
+  release_command = "prisma migrate deploy"
+  strategy = "rolling"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  ALLOWED_ORIGINS = "https://your-frontend-domain.com"
+  JWT_EXPIRES_HOURS = "24"
+  RATE_LIMIT = "1000/minute"
+  BCRYPT_ROUNDS = "12"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "10s"
+    grace_period = "5s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = "2s"
+    tls_skip_verify = false
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    timeout = "2s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
